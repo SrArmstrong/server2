@@ -9,8 +9,8 @@ const jwt = require("jsonwebtoken");
 
 const PORT = process.env.PORT || 3001;
 
-const serviceAccount = require('./config/firebase-key.json');
-//const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_KEY, 'base64').toString('utf8'));
+//const serviceAccount = require('./config/firebase-key.json');
+const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_KEY, 'base64').toString('utf8'));
 
 /*
     $fileContent = Get-Content -Path "config/firebase-key.json" -Raw
