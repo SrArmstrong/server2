@@ -30,7 +30,7 @@ const routes = require('./routes');
 
 server.use(
     cors({
-        origin: ["http://localhost:3000", "https://server1-gb00.onrender.com/"],
+        origin: ["http://localhost:3000", "https://server2-p77b.onrender.com"],
         credentials: true,
     })
 );
