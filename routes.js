@@ -190,7 +190,7 @@ router.get("/getinfo", /*verifyToken*/ async (req, res) => {
 });
 
 // Nuevo endpoint para estadísticas por servidor
-router.get("/server-stats", /*verifyToken,*/ async (req, res) => {
+router.get("/server-stats", async (req, res) => {
     try {
         const snapshot = await db.collection("INFOLOGS").get();
         
@@ -203,22 +203,84 @@ router.get("/server-stats", /*verifyToken,*/ async (req, res) => {
 
         const logs = snapshot.docs.map(doc => doc.data());
         
-        // Procesamiento por servidor
-        const serverStats = {
-            Server1: getStatsForServer(logs, "Server1"),
-            Server2: getStatsForServer(logs, "Server2")
+        // Función para procesar los logs de un servidor específico
+        const processServerLogs = (serverName) => {
+            const serverLogs = logs.filter(log => log.server === serverName);
+            
+            // Agrupar por nivel de log
+            const logLevels = {};
+            serverLogs.forEach(log => {
+                logLevels[log.logLevel] = (logLevels[log.logLevel] || 0) + 1;
+            });
+            
+            // Agrupar por user agent (simplificado)
+            const userAgents = {};
+            serverLogs.forEach(log => {
+                const ua = simplifyUserAgent(log.userAgent);
+                userAgents[ua] = (userAgents[ua] || 0) + 1;
+            });
+            
+            // Agrupar por endpoint y calcular tiempos de respuesta
+            const endpoints = {};
+            serverLogs.forEach(log => {
+                if (!endpoints[log.path]) {
+                    endpoints[log.path] = {
+                        count: 0,
+                        totalTime: 0,
+                        avgTime: 0
+                    };
+                }
+                endpoints[log.path].count++;
+                endpoints[log.path].totalTime += log.responseTime;
+                endpoints[log.path].avgTime = endpoints[log.path].totalTime / endpoints[log.path].count;
+            });
+            
+            // Agrupar por método HTTP
+            const methods = {};
+            serverLogs.forEach(log => {
+                methods[log.method] = (methods[log.method] || 0) + 1;
+            });
+            
+            // Agrupar por código de estado
+            const statusCodes = {};
+            serverLogs.forEach(log => {
+                statusCodes[log.status] = (statusCodes[log.status] || 0) + 1;
+            });
+            
+            return {
+                totalRequests: serverLogs.length,
+                logLevels,
+                userAgents,
+                endpoints,
+                methods,
+                statusCodes
+            };
         };
-
+        
+        // Función para simplificar user agent
+        const simplifyUserAgent = (ua) => {
+            if (!ua) return 'Desconocido';
+            if (ua.includes('Chrome')) return 'Chrome';
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
+            if (ua.includes('Edge')) return 'Edge';
+            if (ua.includes('Opera')) return 'Opera';
+            return 'Otro';
+        };
+        
         res.json({
             success: true,
-            data: serverStats
+            data: {
+                Server1: processServerLogs("Server1"),
+                Server2: processServerLogs("Server2")
+            }
         });
 
     } catch (error) {
         console.error("Error en /server-stats:", error);
         res.status(500).json({
             success: false,
-            message: "Error al procesar estadísticas por servidor"
+            message: "Error al procesar estadísticas"
         });
     }
 });
