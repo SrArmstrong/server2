@@ -314,4 +314,20 @@ router.get("/random", (req, res) => {
     console.log(`EL número random es: ${random}`);
 });
 
+router.get('/error', (req, res) => {
+    try {
+        const errors = [
+            { status: 400, message: 'Bad Request' },
+            { status: 401, message: 'Unauthorized' },
+            { status: 403, message: 'Forbidden' }
+        ];
+
+        const randomError = errors[Math.floor(Math.random() * errors.length)];
+        res.status(randomError.status).send(randomError.message);
+    } catch (error) {
+        console.error(`Error: ${error.message}`);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
 module.exports = router;
