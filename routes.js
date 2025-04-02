@@ -63,8 +63,6 @@ router.post("/register", async (req, res) => {
     }
 });
 
-
-
 router.post("/login", async (req, res) => {
     try {
         const { email, password, token } = req.body;
@@ -115,7 +113,6 @@ router.post("/login", async (req, res) => {
     }
 });
 
-
 const verifyToken = (req, res, next) => {
     const token = req.headers["authorization"];
     if (!token) return res.status(403).json({ message: "Token requerido"});
@@ -128,7 +125,7 @@ const verifyToken = (req, res, next) => {
     });
 };
 
-router.post("/verify-token", (req, res) => {
+router.post("/verify-token", verifyToken, (req, res) => {
     const token = req.headers["authorization"];
 
     if (!token) {
@@ -151,8 +148,7 @@ router.post("/verify-token", (req, res) => {
     });
 });
 
-
-router.get("/getinfo", /*verifyToken*/ async (req, res) => {
+router.get("/getinfo", verifyToken, async (req, res) => {
     try {
         const userRef = db.collection("INFOLOGS").orderBy("timestamp", "desc"); // Ordenar por timestamp descendente
         const snapshot = await userRef.get();
@@ -189,7 +185,6 @@ router.get("/getinfo", /*verifyToken*/ async (req, res) => {
     }
 });
 
-// Nuevo endpoint para estadísticas por servidor
 router.get("/server-stats", async (req, res) => {
     try {
         const snapshot = await db.collection("INFOLOGS").get();
@@ -203,24 +198,20 @@ router.get("/server-stats", async (req, res) => {
 
         const logs = snapshot.docs.map(doc => doc.data());
         
-        // Función para procesar los logs de un servidor específico
         const processServerLogs = (serverName) => {
             const serverLogs = logs.filter(log => log.server === serverName);
             
-            // Agrupar por nivel de log
             const logLevels = {};
             serverLogs.forEach(log => {
                 logLevels[log.logLevel] = (logLevels[log.logLevel] || 0) + 1;
             });
             
-            // Agrupar por user agent (simplificado)
             const userAgents = {};
             serverLogs.forEach(log => {
                 const ua = simplifyUserAgent(log.userAgent);
                 userAgents[ua] = (userAgents[ua] || 0) + 1;
             });
             
-            // Agrupar por endpoint y calcular tiempos de respuesta
             const endpoints = {};
             serverLogs.forEach(log => {
                 if (!endpoints[log.path]) {
@@ -235,13 +226,11 @@ router.get("/server-stats", async (req, res) => {
                 endpoints[log.path].avgTime = endpoints[log.path].totalTime / endpoints[log.path].count;
             });
             
-            // Agrupar por método HTTP
             const methods = {};
             serverLogs.forEach(log => {
                 methods[log.method] = (methods[log.method] || 0) + 1;
             });
             
-            // Agrupar por código de estado
             const statusCodes = {};
             serverLogs.forEach(log => {
                 statusCodes[log.status] = (statusCodes[log.status] || 0) + 1;
@@ -257,7 +246,6 @@ router.get("/server-stats", async (req, res) => {
             };
         };
         
-        // Función para simplificar user agent
         const simplifyUserAgent = (ua) => {
             if (!ua) return 'Desconocido';
             if (ua.includes('Chrome')) return 'Chrome';
@@ -285,7 +273,6 @@ router.get("/server-stats", async (req, res) => {
     }
 });
 
-// Función auxiliar para procesar logs de un servidor específico
 function getStatsForServer(logs, serverName) {
     const serverLogs = logs.filter(log => log.server === serverName);
     
